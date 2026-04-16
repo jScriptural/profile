@@ -22,7 +22,7 @@ func main() {
 		DATABASE_URL = "profile.db"
 	}
 
-	dbHandle := store.NewDBHandle("DATABASE_URL")
+	dbHandle := store.NewDBHandle(DATABASE_URL)
 	service := service.NewService(dbHandle)
 	handler := api.NewHandler(service)
 
