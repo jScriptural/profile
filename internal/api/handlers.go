@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"net/http"
@@ -200,15 +201,73 @@ func (h *Handler) HandleAllProfileRetrievalWithFilter(w http.ResponseWriter, r *
 	return
 }
 
+func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Request) {
+
+	id := r.PathValue("uuid")
+	id = h.removeAllWhitespaces(id)
+
+	if id == "" {
+		h.sendResponse(
+			w,
+			http.StatusBadRequest,
+			"error",
+			"Missing or empty ID",
+			nil,
+			nil,
+		)
+		return
+	}
+
+	_, err := uuid.Parse(id)
+	if err != nil {
+		log.Printf("%v\n", err)
+		h.sendResponse(
+			w,
+			http.StatusUnprocessableEntity,
+			"error",
+			"Invalid UUID",
+			nil,
+			nil,
+		)
+
+		return
+	}
+
+	err = h.svc.DeleteProfile(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRows) {
+			log.Printf("%v\n", err)
+			h.sendResponse(
+				w,
+				http.StatusNotFound,
+				"error",
+				"Profile not found",
+				nil,
+				nil,
+			)
+			return
+		}
+
+		h.sendResponse(
+			w,
+			http.StatusInternalServerError,
+			"error",
+			"Upstream or server error",
+			nil,
+			nil,
+		)
+	}
 
 
-func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Request){
+	h.sendResponse(
+		w,
+		http.StatusNoContent,
+		"success",
+		"",
+		nil,
+		nil,
+	)
 }
-
-
-
-
-
 
 /****************************************
 *                                       *

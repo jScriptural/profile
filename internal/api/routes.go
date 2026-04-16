@@ -13,5 +13,7 @@ func (h *Handler) Routes() *http.ServeMux {
 
 	mux.HandleFunc("GET /api/profiles", h.HandleAllProfileRetrievalWithFilter)
 
+	mux.HandleFunc("DELETE /api/profiles/{uuid}", h.HandleProfileDeletionByID)
+
 	return mux
 }

@@ -229,7 +229,7 @@ func (d *DBHandle) DeleteProfileByID(ctx context.Context, id string) error {
 	}
 
 	if rowsDeleted == 0 {
-		return models.ErrNoRows
+		return fmt.Errorf("DeleteProfileByID: %w", models.ErrNoRows)
 	}
 
 	return nil
