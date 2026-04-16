@@ -114,7 +114,7 @@ func (d *DBHandle) GetProfileByName(ctx context.Context, name string) (*models.P
 
 func (d *DBHandle) GetProfileByID(ctx context.Context, id string) (*models.Profile, error) {
 
-	query := `SELECT id,name,gender,genderProbability,sample_size,age,age_group,country_id,country_probability,created_at
+	query := `SELECT id,name,gender,gender_probability,sample_size,age,age_group,country_id,country_probability,created_at
 	FROM profiles
 	WHERE id = ? LIMIT 1;`
 

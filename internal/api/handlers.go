@@ -9,6 +9,7 @@ import (
 	"io"
 	"errors"
 	"strings"
+	"unicode"
 )
 
 type Handler struct {
@@ -108,22 +109,82 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 
 
 func  (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Request){
-	id := r.PathValue("id");
+	id := h.removeAllWhitespaces(r.PathValue("uuid"));
+	
+	if id == "" {
+		h.sendResponse(
+			w,
+			http.StatusBadRequest,
+			"error",
+			"Missing or empty id",
+			nil,
+			nil,
+		)
+		return;
+	}
 
-	log.Println(id)
-	h.sendResponse(w,http.StatusOK,"success","testing",nil,nil)
+	p,err := h.svc.RetrieveProfileByID(r.Context(),id);
+	if err != nil {
+		if errors.Is(err,models.ErrNoRows){
+			h.sendResponse(
+				w,
+				http.StatusNotFound,
+				"error",
+				"Profile not found",
+				nil,
+				nil,
+			)
+			return
+		}
+
+		h.sendResponse(
+			w,
+			http.StatusInternalServerError,
+			"error",
+			"Unexpected server error",
+			nil,
+			nil,
+		)
+
+		return;
+	}
+
+	h.sendResponse(w,http.StatusOK,"success","",nil,p)
+
+}
+
+
+func (h *Handler) HandleAllProfileRetrievalWithFilter(w http.ResponseWriter, r *http.Request){
+	values := r.URL.Query();
+
+	log.Printf("values: %#v\n",values)
+
+	gender := values.Get("gender")
+	countryID := values.Get("country_id")
+	ageGroup := values.Get("age_group");
+
+
+
+	var count int = 23;
+	h.sendResponse(
+		w,
+		http.StatusOK,
+		"success",
+		"testing",
+		&count,
+		struct{gender string;ageGroup string;countryID string}{gender,ageGroup,countryID},
+	)
+
 }
 
 
 
 
-
-
-
-/*************************************     
-*    HELPER FUNC                     *
-*                                    *    
-**************************************/
+/****************************************  
+*                                       *
+*            HELPER FUNCS               *
+*                                       *  
+*****************************************/
 
 func (h *Handler) decode(r io.Reader, v any) error {
 	decoder := json.NewDecoder(r)
@@ -154,6 +215,7 @@ func (h *Handler) sendResponse(w http.ResponseWriter, statusCode int, status, ms
 		Status:  status,
 		Message: msg,
 		Data:    data,
+		Count: count,
 	}
 
 
@@ -161,4 +223,15 @@ func (h *Handler) sendResponse(w http.ResponseWriter, statusCode int, status, ms
 		log.Printf("failed to encode response: %v", err)
 	}
 
+}
+
+func (h *Handler)removeAllWhitespaces(s string) string {
+	trim := strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, s)
+
+	return trim;
 }

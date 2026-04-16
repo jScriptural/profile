@@ -99,12 +99,42 @@ func (s *Service) GetOrCreateProfile(ctx context.Context, name string) (*models.
 	prof := s.assembleProfile(name, &gRes, &aRes, &nRes)
 
 	if err := s.store.SaveProfile(ctx, prof); err != nil {
-		log.Printf("GetorCreateProfile: %v",err)
+		log.Printf("GetOrCreateProfile: %v",err)
 		return nil, false, fmt.Errorf("GetOrCreateProfile: %w",err);
 	}
 
 	return prof, true, nil
 }
+
+
+
+func (s *Service) RetrieveProfileByID(ctx context.Context, id string) (*models.Profile, error) {
+
+	p,err := s.store.GetProfileByID(ctx,id);
+	if err != nil {
+		return nil,fmt.Errorf("RetrieveProfileByID: %w",err);
+	}
+
+	return p,nil;
+}
+
+
+
+
+
+
+
+
+
+
+
+/****************************************
+*                                       *
+*            HELPER FUNCS               *
+*                                       *
+*****************************************/
+
+
 
 func (s *Service) fetchNation(ctx context.Context, name string, nRes *models.NationalizeResponse) error {
 	u, err := url.Parse("https://api.nationalize.io")
