@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
 	_ "modernc.org/sqlite"
 	"profile/internal/models"
 	"strings"
-	"log"
 )
 
 type DBHandle struct {
@@ -118,8 +118,11 @@ func (d *DBHandle) GetProfileByID(ctx context.Context, id string) (*models.Profi
 	FROM profiles
 	WHERE id = ? LIMIT 1;`
 
-	p := models.Profile{}
-	var idStr string
+	var (
+		p     models.Profile
+		idStr string
+	)
+
 	err := d.DB.QueryRowContext(ctx, query, id).Scan(
 		&idStr,
 		&p.Name,
@@ -135,7 +138,7 @@ func (d *DBHandle) GetProfileByID(ctx context.Context, id string) (*models.Profi
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, models.ErrNoRows
+			return nil, fmt.Errorf("GetProfileByID(id: %v): %w", id, models.ErrNoRows)
 		}
 
 		return nil, fmt.Errorf("GetProfileByID(id: %v): %w", id, err)
@@ -149,13 +152,13 @@ func (d *DBHandle) GetProfileByID(ctx context.Context, id string) (*models.Profi
 	return &p, nil
 }
 
-func (d *DBHandle) GetProfile(ctx context.Context, gender, countryID, ageGroup string) ([]*models.Profile, error) {
+func (d *DBHandle) GetProfiles(ctx context.Context, gender, countryID, ageGroup string) ([]*models.Profile, error) {
 	var qb strings.Builder
 	qb.WriteString(`SELECT id,name,gender,age,age_group,country_id
 	FROM profiles
 	WHERE 1=1 `)
 
-	var queryParam []any;
+	var queryParam []any
 
 	if gender != "" {
 		qb.WriteString(`AND gender = ? `)
@@ -175,15 +178,15 @@ func (d *DBHandle) GetProfile(ctx context.Context, gender, countryID, ageGroup s
 
 	rows, err := d.DB.QueryContext(ctx, qb.String(), queryParam...)
 
+	sp := []*models.Profile{}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, models.ErrNoRows
+			return sp, nil
 		}
 
-		return nil, fmt.Errorf("GetProfile: %w", err)
+		return nil, fmt.Errorf("GetProfiles: %w", err)
 	}
 
-	sp := []*models.Profile{}
 	var idStr string
 	for rows.Next() {
 		p := models.Profile{}
@@ -196,12 +199,12 @@ func (d *DBHandle) GetProfile(ctx context.Context, gender, countryID, ageGroup s
 			&p.CountryID,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("GetProfile: %w", err)
+			return nil, fmt.Errorf("GetProfiles: %w", err)
 		}
 
 		p.ID, err = uuid.Parse(idStr)
 		if err != nil {
-			return nil, fmt.Errorf("GetProfile: %w", err)
+			return nil, fmt.Errorf("GetProfiles: %w", err)
 		}
 
 		sp = append(sp, &p)

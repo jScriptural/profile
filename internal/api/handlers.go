@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
-	"profile/internal/service"
 	"profile/internal/models"
-	"io"
-	"errors"
+	"profile/internal/service"
 	"strings"
 	"unicode"
 )
@@ -26,8 +26,6 @@ func NewHandler(s *service.Service) *Handler {
 func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var data models.PostData
-	
-
 
 	if err := h.decode(r.Body, &data); err != nil {
 		h.sendResponse(
@@ -41,8 +39,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-
-	log.Printf("postData: %v",data)
+	log.Printf("postData: %v", data)
 	if strings.TrimSpace(data.Name) == "" {
 		h.sendResponse(
 			w,
@@ -51,7 +48,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 			"Missing or empty name",
 			nil,
 			nil,
-		);
+		)
 		return
 	}
 	data.Name = strings.ToLower(strings.TrimSpace(data.Name))
@@ -67,17 +64,17 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 				"Genderize returned an invalid response",
 				nil,
 				nil,
-			);
+			)
 			return
 		}
 
 		h.sendResponse(
 			w,
 			http.StatusInternalServerError,
-			"error","Upstream or server error",
+			"error", "Upstream or server error",
 			nil,
 			nil,
-		);
+		)
 		return
 	}
 
@@ -89,7 +86,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 			"",
 			nil,
 			p,
-		);
+		)
 		return
 	}
 
@@ -106,11 +103,9 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 	return
 }
 
+func (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Request) {
+	id := h.removeAllWhitespaces(r.PathValue("uuid"))
 
-
-func  (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Request){
-	id := h.removeAllWhitespaces(r.PathValue("uuid"));
-	
 	if id == "" {
 		h.sendResponse(
 			w,
@@ -120,12 +115,12 @@ func  (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Req
 			nil,
 			nil,
 		)
-		return;
+		return
 	}
 
-	p,err := h.svc.RetrieveProfileByID(r.Context(),id);
+	p, err := h.svc.RetrieveProfileByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err,models.ErrNoRows){
+		if errors.Is(err, models.ErrNoRows) {
 			h.sendResponse(
 				w,
 				http.StatusNotFound,
@@ -146,44 +141,79 @@ func  (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Req
 			nil,
 		)
 
-		return;
+		return
 	}
 
-	h.sendResponse(w,http.StatusOK,"success","",nil,p)
+	h.sendResponse(w, http.StatusOK, "success", "", nil, p)
 
 }
 
+func (h *Handler) HandleAllProfileRetrievalWithFilter(w http.ResponseWriter, r *http.Request) {
+	values := r.URL.Query()
 
-func (h *Handler) HandleAllProfileRetrievalWithFilter(w http.ResponseWriter, r *http.Request){
-	values := r.URL.Query();
-
-	log.Printf("values: %#v\n",values)
+	log.Printf("values: %#v\n", values)
 
 	gender := values.Get("gender")
 	countryID := values.Get("country_id")
-	ageGroup := values.Get("age_group");
+	ageGroup := values.Get("age_group")
 
+	gender = strings.ToLower(h.removeAllWhitespaces(gender))
+	ageGroup = strings.ToLower(h.removeAllWhitespaces(ageGroup))
+	countryID = strings.ToUpper(h.removeAllWhitespaces(countryID))
+	println(gender, ageGroup, countryID)
 
+	p, err := h.svc.GetAllProfiles(r.Context(), gender, countryID, ageGroup)
+	if err != nil {
+		log.Printf("error: %v", err)
+		h.sendResponse(
+			w,
+			http.StatusInternalServerError,
+			"error",
+			"Unexpected server error",
+			nil,
+			nil,
+		)
+		return
+	}
 
-	var count int = 23;
+	if len(p) == 0 {
+		h.sendResponse(
+			w,
+			http.StatusNotFound,
+			"error",
+			"Missing or empty profile",
+			nil,
+			nil,
+		)
+		return
+	}
+
+	count := len(p)
 	h.sendResponse(
 		w,
 		http.StatusOK,
 		"success",
-		"testing",
+		"",
 		&count,
-		struct{gender string;ageGroup string;countryID string}{gender,ageGroup,countryID},
+		p,
 	)
+	return
+}
 
+
+
+func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Request){
 }
 
 
 
 
-/****************************************  
+
+
+/****************************************
 *                                       *
 *            HELPER FUNCS               *
-*                                       *  
+*                                       *
 *****************************************/
 
 func (h *Handler) decode(r io.Reader, v any) error {
@@ -197,7 +227,7 @@ func (h *Handler) decode(r io.Reader, v any) error {
 }
 
 func (h *Handler) encode(w io.Writer, data any) error {
-	log.Printf("%v",data)
+	log.Printf("%v", data)
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(data); err != nil {
 		return err
@@ -205,7 +235,6 @@ func (h *Handler) encode(w io.Writer, data any) error {
 
 	return nil
 }
-
 
 func (h *Handler) sendResponse(w http.ResponseWriter, statusCode int, status, msg string, count *int, data any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -215,9 +244,8 @@ func (h *Handler) sendResponse(w http.ResponseWriter, statusCode int, status, ms
 		Status:  status,
 		Message: msg,
 		Data:    data,
-		Count: count,
+		Count:   count,
 	}
-
 
 	if err := h.encode(w, resp); err != nil {
 		log.Printf("failed to encode response: %v", err)
@@ -225,7 +253,7 @@ func (h *Handler) sendResponse(w http.ResponseWriter, statusCode int, status, ms
 
 }
 
-func (h *Handler)removeAllWhitespaces(s string) string {
+func (h *Handler) removeAllWhitespaces(s string) string {
 	trim := strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
 			return -1
@@ -233,5 +261,5 @@ func (h *Handler)removeAllWhitespaces(s string) string {
 		return r
 	}, s)
 
-	return trim;
+	return trim
 }

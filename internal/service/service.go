@@ -3,15 +3,15 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"net/url"
 	"profile/internal/models"
-	"log"
 	"sync"
 	"time"
-	"fmt"
-	"errors"
 )
 
 type Store interface {
@@ -21,10 +21,9 @@ type Store interface {
 
 	GetProfileByID(ctx context.Context, id string) (*models.Profile, error)
 
-	GetProfile(ctx context.Context, gender, countryID, ageGroup string) ([]*models.Profile, error)
+	GetProfiles(ctx context.Context, gender, countryID, ageGroup string) ([]*models.Profile, error)
 
 	DeleteProfileByID(ctx context.Context, id string) error
-
 }
 
 type Service struct {
@@ -46,7 +45,7 @@ func (s *Service) GetOrCreateProfile(ctx context.Context, name string) (*models.
 	}
 
 	if err != nil && !errors.Is(err, models.ErrNoRows) {
-		log.Printf("GetorCreateProfile: %v",err)
+		log.Printf("GetorCreateProfile: %v", err)
 		return nil, false, err
 	}
 
@@ -87,54 +86,50 @@ func (s *Service) GetOrCreateProfile(ctx context.Context, name string) (*models.
 
 	for err := range errChan {
 		if err != nil {
-			log.Printf("GetorCreateProfile: %v",err)
+			log.Printf("GetorCreateProfile: %v", err)
 			return nil, false, err
 		}
 	}
 
 	if len(nRes.Country) == 0 || aRes.Age == nil || gRes.Gender == nil || gRes.Count == 0 {
-		return nil, false, fmt.Errorf("GetOrCreateProfile: %w",models.Err502);
+		return nil, false, fmt.Errorf("GetOrCreateProfile: %w", models.Err502)
 	}
 
 	prof := s.assembleProfile(name, &gRes, &aRes, &nRes)
 
 	if err := s.store.SaveProfile(ctx, prof); err != nil {
-		log.Printf("GetOrCreateProfile: %v",err)
-		return nil, false, fmt.Errorf("GetOrCreateProfile: %w",err);
+		log.Printf("GetOrCreateProfile: %v", err)
+		return nil, false, fmt.Errorf("GetOrCreateProfile: %w", err)
 	}
 
 	return prof, true, nil
 }
 
-
-
 func (s *Service) RetrieveProfileByID(ctx context.Context, id string) (*models.Profile, error) {
 
-	p,err := s.store.GetProfileByID(ctx,id);
+	p, err := s.store.GetProfileByID(ctx, id)
 	if err != nil {
-		return nil,fmt.Errorf("RetrieveProfileByID: %w",err);
+		return nil, fmt.Errorf("RetrieveProfileByID: %w", err)
 	}
 
-	return p,nil;
+	return p, nil
 }
 
+func (s *Service) GetAllProfiles(ctx context.Context, gndr, cID, ageGrp string) ([]*models.Profile, error) {
 
+	p, err := s.store.GetProfiles(ctx, gndr, cID, ageGrp)
+	if err != nil {
+		return p, fmt.Errorf("GetAllProfiles: %w", err)
+	}
 
-
-
-
-
-
-
-
+	return p, nil
+}
 
 /****************************************
 *                                       *
 *            HELPER FUNCS               *
 *                                       *
 *****************************************/
-
-
 
 func (s *Service) fetchNation(ctx context.Context, name string, nRes *models.NationalizeResponse) error {
 	u, err := url.Parse("https://api.nationalize.io")
@@ -233,7 +228,7 @@ func (s *Service) fetchAge(ctx context.Context, name string, aRes *models.AgifyR
 func (s *Service) assembleProfile(name string, gRes *models.GenderizeResponse, aRes *models.AgifyResponse, nRes *models.NationalizeResponse) *models.Profile {
 	p := models.Profile{}
 
-	p.ID,_= uuid.NewV7()
+	p.ID, _ = uuid.NewV7()
 	p.Name = name
 	p.Gender = *gRes.Gender
 	p.GenderProbability = gRes.Probability

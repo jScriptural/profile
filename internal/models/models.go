@@ -8,7 +8,7 @@ import (
 
 var (
 	ErrNoRows = errors.New("No rows found")
-	Err502 = errors.New("Invalid Data")
+	Err502    = errors.New("Invalid Data")
 )
 
 type Profile struct {
@@ -37,16 +37,16 @@ type APIResponse struct {
 
 type GenderizeResponse struct {
 	Name        string  `json:"name"`
-	Gender      *string  `json:"gender"`
+	Gender      *string `json:"gender"`
 	Probability float64 `json:"probability"`
 	Count       int     `json:"count"`
-	CountryID   *string  `json:"country_id,omitempty"`
+	CountryID   *string `json:"country_id,omitempty"`
 }
 
 type AgifyResponse struct {
 	Count     int    `json:"count"`
 	Name      string `json:"name"`
-	Age       *int    `json:"age"`
+	Age       *int   `json:"age"`
 	CountryID string `json:"country_id,omitempty"`
 }
 
