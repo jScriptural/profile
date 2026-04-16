@@ -13,11 +13,16 @@ import (
 
 func main() {
 	PORT := os.Getenv("PORT");
+	DATABASE_URL := os.Getenv("DATABASE_URL")
 	if PORT == "" {
 		PORT = "8080"
 	}
 
-	dbHandle := store.NewDBHandle("profile.db")
+	if DATABASE_URL == "" {
+		DATABASE_URL = "profile.db"
+	}
+
+	dbHandle := store.NewDBHandle("DATABASE_URL")
 	service := service.NewService(dbHandle)
 	handler := api.NewHandler(service)
 
