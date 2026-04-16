@@ -28,9 +28,9 @@ profile/
 | Method | Endpoint | Description | Status Codes |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/profiles` | Create or retrieve profile via JSON body. | `201`, `200`, `400`, `422` |
-| `GET` | `/api/profiles/{name}` | Get a single profile by name. | `200`, `404` |
+| `GET` | `/api/profiles/{uuid}` | Get a single profile by uuid. | `200`, `404` |
 | `GET` | `/api/profiles` | List all profiles (supports query params). | `200`, `500` |
-| `DELETE` | `/api/profiles/{name}` | Remove a profile from the database. | `204`, `404`, `500` |
+| `DELETE` | `/api/profiles/{uuid}` | Remove a profile from the database. | `204`, `404`, `500` |
 
 
 
