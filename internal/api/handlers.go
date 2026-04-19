@@ -29,7 +29,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 	var data models.PostData
 
 	if err := h.decode(r.Body, &data); err != nil {
-		log.Printf("%v",err);
+		log.Printf("%v", err)
 		h.sendResponse(
 			w,
 			http.StatusUnprocessableEntity,
@@ -58,7 +58,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 	p, isNew, err := h.svc.GetOrCreateProfile(r.Context(), data.Name)
 
 	if err != nil {
-		log.Printf("%v",err);
+		log.Printf("%v", err)
 		if errors.Is(err, models.Err502) {
 			h.sendResponse(
 				w,
@@ -74,7 +74,7 @@ func (h *Handler) HandleProfileCreation(w http.ResponseWriter, r *http.Request) 
 		h.sendResponse(
 			w,
 			http.StatusInternalServerError,
-			"error", 
+			"error",
 			"Upstream or server error",
 			nil,
 			nil,
@@ -122,10 +122,10 @@ func (h *Handler) HandleProfileRetrievalByID(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	log.Printf("%v",id)
+	log.Printf("%v", id)
 	p, err := h.svc.RetrieveProfileByID(r.Context(), id)
 	if err != nil {
-		log.Printf("%v",err)
+		log.Printf("%v", err)
 		if errors.Is(err, models.ErrNoRows) {
 			h.sendResponse(
 				w,
@@ -165,7 +165,7 @@ func (h *Handler) HandleAllProfileRetrievalWithFilter(w http.ResponseWriter, r *
 	ageGroup = strings.ToLower(h.removeAllWhitespaces(ageGroup))
 	countryID = strings.ToUpper(h.removeAllWhitespaces(countryID))
 
-	log.Printf("queries: %v",[]string{gender, ageGroup, countryID})
+	log.Printf("queries: %v", []string{gender, ageGroup, countryID})
 
 	p, err := h.svc.GetAllProfiles(r.Context(), gender, countryID, ageGroup)
 	if err != nil {
@@ -222,7 +222,6 @@ func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-
 	_, err := uuid.Parse(id)
 	if err != nil {
 		log.Printf("%v", err)
@@ -263,8 +262,7 @@ func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Reque
 		)
 	}
 
-		
-	log.Printf("Deleted: %v",id)
+	log.Printf("Deleted: %v", id)
 	h.sendResponse(
 		w,
 		http.StatusNoContent,
@@ -273,6 +271,20 @@ func (h *Handler) HandleProfileDeletionByID(w http.ResponseWriter, r *http.Reque
 		nil,
 		nil,
 	)
+}
+
+func (h *Handler) HandleAdmin(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Bearer token: %v", r.Header.Get("Authorization"))
+
+	h.sendResponse(
+		w,
+		http.StatusOK,
+		"success",
+		"Access granted",
+		nil,
+		nil,
+	)
+	return
 }
 
 /****************************************

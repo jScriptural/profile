@@ -6,7 +6,7 @@ import (
 	"os"
 	"profile/internal/api"
 	"profile/internal/service"
-	"profile/middleware"
+	mw "profile/middleware"
 	"profile/store"
 )
 
@@ -29,10 +29,10 @@ func main() {
 	mux := handler.Routes()
 	server := &http.Server{
 		Addr:    ":" + PORT,
-		Handler: middleware.EnableCORS(mux),
+		Handler: mw.CORS(mux,"*"),
 	}
 
-	log.Printf("Server is starting at %v\n",server.Addr);
+	log.Printf("Server is starting at %v: db->%v\n",server.Addr,DATABASE_URL);
 	err := server.ListenAndServe()
 	log.Fatal(err)
 }

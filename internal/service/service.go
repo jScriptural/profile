@@ -125,7 +125,6 @@ func (s *Service) GetAllProfiles(ctx context.Context, gndr, cID, ageGrp string) 
 	return p, nil
 }
 
-
 func (s *Service) DeleteProfile(ctx context.Context, id string) error {
 
 	err := s.store.DeleteProfileByID(ctx, id)
@@ -135,6 +134,7 @@ func (s *Service) DeleteProfile(ctx context.Context, id string) error {
 	}
 
 	return nil
+
 }
 
 /****************************************

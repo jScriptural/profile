@@ -154,7 +154,7 @@ func (d *DBHandle) GetProfileByID(ctx context.Context, id string) (*models.Profi
 
 func (d *DBHandle) GetProfiles(ctx context.Context, gender, countryID, ageGroup string) ([]*models.Profile, error) {
 	var qb strings.Builder
-	qb.WriteString(`SELECT id,name,gender,age,age_group,country_id
+	qb.WriteString(`SELECT id,name,gender,age,age_group,country_id,created_at
 	FROM profiles
 	WHERE 1=1 `)
 
@@ -197,6 +197,7 @@ func (d *DBHandle) GetProfiles(ctx context.Context, gender, countryID, ageGroup 
 			&p.Age,
 			&p.AgeGroup,
 			&p.CountryID,
+			&p.CreatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("GetProfiles: %w", err)
